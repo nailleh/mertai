@@ -48,13 +48,19 @@
   }
   function fresh() { cur = null; reset(); empty.hidden = false; renderList(); input.focus(); if (innerWidth < 800) document.body.classList.add('closed'); }
 
+  async function typeOut(b, full) {
+    const step = Math.max(3, Math.ceil(full.length / 90));
+    for (let i = step; i < full.length; i += step) { b.innerHTML = md(full.slice(0, i)); down(); await new Promise(r => setTimeout(r, 14)); }
+    b.innerHTML = md(full); down();
+  }
+
   async function ask(text, regen) {
     if (!cur) { cur = { id: crypto.randomUUID(), title: text.slice(0, 36), msgs: [], pin: false, started: false }; chats.unshift(cur); }
     busy = true; empty.hidden = true; sync();
     if (!regen) { cur.msgs.push({ r: 'user', t: text }); add('user', text); }
     const b = add('ai', '', true); let acc = '';
     try {
-      const history = cur.msgs.map(m => ({ role: m.r === 'user' ? 'user' : 'assistant', content: m.t }));
+      const history = cur.msgs.slice(0, -1).map(m => ({ role: m.r === 'user' ? 'user' : 'assistant', content: m.t }));
       const r = await fetch('api/chat.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, history: history }) });
       if (!r.ok || !r.body) throw 0;
       const rd = r.body.getReader(), dec = new TextDecoder(); let buf = '';
@@ -65,16 +71,18 @@
         while ((idx = buf.indexOf('\n\n')) >= 0) {
           const chunk = buf.slice(0, idx);
           buf = buf.slice(idx + 2);
-          const trimmed = chunk.trim();
-          if (!trimmed.startsWith('data:')) continue;
+          const k = chunk.indexOf('data:');
+          if (k < 0) continue;
+          const trimmed = chunk.slice(k);
           try {
             const d = JSON.parse(trimmed.slice(5));
             if (d.e) throw 0;
-            if (d.t) { acc += d.t; b.innerHTML = md(acc); down(); }
+            if (d.t) acc += d.t;
           } catch (e) { console.error('Parse error:', e, 'Chunk:', chunk); }
         }
       }
       if (!acc) throw 0;
+      await typeOut(b, acc);
       cur.started = true; cur.msgs.push({ r: 'ai', t: acc });
       b.parentNode.remove(); add('ai', acc);
     } catch (e) { console.error('API Error:', e); b.innerHTML = (acc ? md(acc) : '') + '<p class="err">Bağlantı hatası: ' + (e.message || 'API yanıt vermedi') + '</p>'; }
