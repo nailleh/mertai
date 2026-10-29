@@ -1,0 +1,16 @@
+Options -Indexes
+DirectoryIndex index.php
+RewriteEngine On
+RewriteRule ^pages/ - [F]
+RewriteRule ^(\.|.*\.(inc|log|ini)$) - [F]
+<IfModule mod_headers.c>
+Header set X-Content-Type-Options "nosniff"
+Header set Referrer-Policy "strict-origin-when-cross-origin"
+Header set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+<IfModule mod_deflate.c>
+SetEnvIfNoCase Request_URI ^/api/ no-gzip=1
+</IfModule>
+<FilesMatch "\.(css|js|jpe?g|png|svg)$">
+Header set Cache-Control "public, max-age=604800"
+</FilesMatch>
