@@ -112,7 +112,7 @@
     const a = e.target.closest('[data-a]'); if (!a) return;
     const k = a.dataset.a, msg = a.closest('.msg');
     if (k === 'cp') navigator.clipboard.writeText(msg.querySelector('.b').innerText);
-    else if (k === 'rg' && !busy && cur && msg === log.lastElementChild) {
+    else if (k === 'rg' && !busy && cur && msg.nextElementSibling === spacer) {
       const last = [...cur.msgs].reverse().find(m => m.r === 'user'); if (!last) return;
       cur.msgs.pop(); msg.remove(); ask(last.t, true);
     } else { a.classList.toggle('on'); }
