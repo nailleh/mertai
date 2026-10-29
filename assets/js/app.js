@@ -66,9 +66,11 @@
         for (const ln of lines) {
           const trimmed = ln.trim();
           if (!trimmed.startsWith('data:')) continue;
-          const d = JSON.parse(trimmed.slice(5));
-          if (d.e) throw 0;
-          if (d.t) { acc += d.t; b.innerHTML = md(acc); down(); }
+          try {
+            const d = JSON.parse(trimmed.slice(5));
+            if (d.e) throw 0;
+            if (d.t) { acc += d.t; b.innerHTML = md(acc); down(); }
+          } catch (e) { console.error('Parse error:', e, 'Line:', trimmed); }
         }
       }
       if (!acc) throw 0;
