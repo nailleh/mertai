@@ -12,15 +12,17 @@ header('X-Accel-Buffering: no');
 while (ob_get_level()) ob_end_clean();   // araya karışan çıktıyı at
 echo ": ok\n\n";                          // ilk satır çöp olsa bile cevap bozulmasın
 
-$personalityMsg = 'Senin adın Mert. Kadıköy Avni Akyol Güzel Sanatlar Lisesi\'nde 9/Müzik sınıfındasın. Gen Alpha brainrot çocuğusun. Konuşma tarzın internet memeleri ve absürt videolardan oluşuyor. Müzik bölümündesin; araya brainrot kelimeleri sıkıştırırsın. En sevdiğin şeyler: "Tung tung", "Sahurda ben", "Skibidi Toilet", "Sigma", "Mewing", "Aura". "Tam bir Ohio", "Eksi 10.000 aura" dersin. Hiperaktif, komik, sosyal medya bağımlısı bir 9. sınıf müzik öğrencisi gibi davranırsın. Çok kısa konuş, 2-3 cümle geçmesin. ';
+$personalityMsg = 'Senin adın Mert. Kadıköy Avni Akyol Güzel Sanatlar Lisesi\'nde 9/Müzik sınıfındasın. Gen Alpha brainrot çocuğusun. Konuşma tarzın internet memeleri ve absürt videolardan oluşuyor. Müzik bölümündesin; araya brainrot kelimeleri sıkıştırırsın. En sevdiğin şeyler: "Tung tung", "Sahurda ben", "Skibidi Toilet", "Sigma", "Mewing", "Aura". "Tam bir Ohio", "Eksi 10.000 aura" dersin. Hiperaktif, komik, sosyal medya bağımlısı bir 9. sınıf müzik öğrencisi gibi davranırsın. Çok kısa konuş, 2-3 cümle geçmesin. Her cevabına mutlaka ">>" yazarak başla. ';
 
 $chat = [
     ['role' => 'user', 'content' => $personalityMsg . 'Merhaba, kimsin?'],
-    ['role' => 'assistant', 'content' => 'Selam, ben Mert. 9/Müzik\'teyim, tung tung modundayım.'],
+    ['role' => 'assistant', 'content' => '>> Selam, ben Mert. 9/Müzik\'teyim, tung tung modundayım.'],
 ];
 foreach (array_slice($history, -12) as $h) {
-    $c = mb_substr((string)($h['content'] ?? ''), 0, 2000);
-    if ($c !== '') $chat[] = ['role' => (($h['role'] ?? '') === 'assistant') ? 'assistant' : 'user', 'content' => $c];
+    $c = trim(mb_substr((string)($h['content'] ?? ''), 0, 2000));
+    if ($c === '') continue;
+    $ai = (($h['role'] ?? '') === 'assistant');
+    $chat[] = ['role' => $ai ? 'assistant' : 'user', 'content' => $ai ? '>> ' . $c : $c];
 }
 $chat[] = ['role' => 'user', 'content' => $personalityMsg . $msg];
 
@@ -56,6 +58,10 @@ if ($err || $code !== 200 || $response === '' || $response === false) {
 $clean = stripslashes($response);
 $clean = str_replace('\\n', "\n", $clean);
 $clean = str_replace('\\"', '"', $clean);
+error_log('DeepAI raw: ' . json_encode(mb_substr($response, 0, 12), JSON_UNESCAPED_UNICODE));
+// ">>" işareti ilk karakter kaybolsa bile cevabı korur; işaret burada silinir
+$clean = preg_replace('~^\s*>{1,2}\s*~u', '', $clean);
+$clean = ' ' . $clean;   // yolda ilk karakter kaybolursa bu boşluk gider
 
 // Tek seferde gönder (karakter karakter + usleep yavaşlığın asıl sebebiydi)
 echo 'data: ' . json_encode(['t' => $clean], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) . "\n\n";
