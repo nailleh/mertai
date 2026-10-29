@@ -61,16 +61,17 @@
       for (;;) {
         const { done, value } = await rd.read(); if (done) break;
         buf += dec.decode(value, { stream: true });
-        const lines = buf.split('\n\n');
-        buf = lines.pop() || '';
-        for (const ln of lines) {
-          const trimmed = ln.trim();
+        let idx;
+        while ((idx = buf.indexOf('\n\n')) >= 0) {
+          const chunk = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          const trimmed = chunk.trim();
           if (!trimmed.startsWith('data:')) continue;
           try {
             const d = JSON.parse(trimmed.slice(5));
             if (d.e) throw 0;
             if (d.t) { acc += d.t; b.innerHTML = md(acc); down(); }
-          } catch (e) { console.error('Parse error:', e, 'Line:', trimmed); }
+          } catch (e) { console.error('Parse error:', e, 'Chunk:', chunk); }
         }
       }
       if (!acc) throw 0;
@@ -92,10 +93,10 @@
   document.querySelectorAll('[data-toggle]').forEach(b => b.onclick = () => document.body.classList.toggle('closed'));
   if (innerWidth < 800) document.body.classList.add('closed');
 
-  $('#more').onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; $('#pin span').textContent = cur && cur.pin ? 'Sabitlemeyi kaldır' : 'Sohbeti sabitle'; };
-  document.addEventListener('click', () => menu.hidden = true);
-  $('#pin').onclick = () => { if (cur) { cur.pin = !cur.pin; save(); renderList(); } };
-  $('#del').onclick = () => { if (cur && !busy) { chats = chats.filter(c => c !== cur); save(); fresh(); } };
+  if ($('#more')) $('#more').onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; $('#pin span').textContent = cur && cur.pin ? 'Sabitlemeyi kaldır' : 'Sohbeti sabitle'; };
+  if (menu) document.addEventListener('click', () => menu.hidden = true);
+  if ($('#pin')) $('#pin').onclick = () => { if (cur) { cur.pin = !cur.pin; save(); renderList(); } };
+  if ($('#del')) $('#del').onclick = () => { if (cur && !busy) { chats = chats.filter(c => c !== cur); save(); fresh(); } };
 
   log.addEventListener('click', e => {
     const c = e.target.closest('.cp');
